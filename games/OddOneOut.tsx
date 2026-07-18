@@ -28,7 +28,7 @@ export function OddOneOutHost({ room }: { room: RoomState }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  async function loadQuestion(index: number) {
+async function loadQuestion(index: number) {
     const q = getOddOneOutQuestion(index);
     await updateRoom(room.code, {
       oddOneOut: {
@@ -36,12 +36,9 @@ export function OddOneOutHost({ room }: { room: RoomState }) {
         options: q.options,
         oddIndex: q.oddIndex,
         category: q.category,
-        selectedIndex: undefined,
-        lastResult: undefined,
       },
     });
   }
-
   useEffect(() => {
     if (!state || state.selectedIndex === undefined || state.lastResult) return;
     void grade(state.selectedIndex === state.oddIndex);
