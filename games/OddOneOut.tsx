@@ -66,7 +66,7 @@ export function OddOneOutHost({ room }: { room: RoomState }) {
       },
     });
     // Auto-advance to input after 10 s — host can also skip early.
-    timerRef.current = window.setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       void advanceToInput();
     }, SHOW_DURATION_MS);
   }

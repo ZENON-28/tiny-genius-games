@@ -81,7 +81,7 @@ export function ColorMemoryHost({ room }: { room: RoomState }) {
       colorMemory: { sequence, playerInput: [], phase: "show", level },
     });
     // Auto-advance after 10 s — host can also skip early.
-    timerRef.current = window.setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       void advanceToInput();
     }, SHOW_DURATION_MS);
   }
