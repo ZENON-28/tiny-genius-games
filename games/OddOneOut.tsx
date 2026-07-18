@@ -169,14 +169,12 @@ export function OddOneOutHost({ room }: { room: RoomState }) {
 }
 
 // ---------------------------------------------------------------------------
-// PLAYER VIEW — four plain answer buttons (A/B/C/D), locked during show phase
+// PLAYER VIEW — shows the actual emoji/number options; player taps the odd one
 // ---------------------------------------------------------------------------
 export function OddOneOutPlayer({ room }: { room: RoomState }) {
   const state = room.oddOneOut;
-  const labels = ["🔴", "🟢", "🔵", "🟡"];
-  const colors = ["bg-candy-red", "bg-candy-green", "bg-candy-blue", "bg-candy-yellow"];
 
-  // Locked if: no state, player already answered, OR we're still in "show" phase
+  // Locked if: no state, player already answered, still in show phase, or result
   const disabled =
     !state || state.selectedIndex !== undefined || state.phase === "show" || state.phase === "result";
 
@@ -184,6 +182,17 @@ export function OddOneOutPlayer({ room }: { room: RoomState }) {
     if (disabled) return;
     playSound("click", room.soundOn);
     await patchRoomField(room.code, "oddOneOut.selectedIndex", i);
+  }
+
+  // Numbers round = single digit strings
+  const isNumbers = state?.options.every((o) => /^\d$/.test(o));
+
+  function cardStyle(i: number) {
+    if (!state?.lastResult) return "bg-white";
+    if (i === state.selectedIndex)
+      return state.lastResult === "correct" ? "bg-green-200" : "bg-red-200";
+    if (i === state.oddIndex && state.lastResult === "wrong") return "bg-green-100";
+    return "bg-white opacity-50";
   }
 
   return (
@@ -197,10 +206,10 @@ export function OddOneOutPlayer({ room }: { room: RoomState }) {
             exit={{ opacity: 0 }}
             className="text-center font-display text-xl font-bold text-purple-700"
           >
-            Look at the TV! 📺
+            Get ready... 👀
           </motion.p>
         )}
-        {state?.phase === "input" && (
+        {state?.phase === "input" && state?.selectedIndex === undefined && (
           <motion.p
             key="input"
             initial={{ opacity: 0 }}
@@ -208,9 +217,18 @@ export function OddOneOutPlayer({ room }: { room: RoomState }) {
             exit={{ opacity: 0 }}
             className="text-center font-display text-xl font-bold text-purple-700"
           >
-            {state.selectedIndex === undefined
-              ? "Which one is different? 🤔"
-              : "Waiting..."}
+            Tap the odd one out! 🤔
+          </motion.p>
+        )}
+        {state?.phase === "input" && state?.selectedIndex !== undefined && (
+          <motion.p
+            key="waiting"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-center font-display text-xl font-bold text-purple-700"
+          >
+            Waiting for result... ⏳
           </motion.p>
         )}
         {state?.phase === "result" && (
@@ -226,19 +244,43 @@ export function OddOneOutPlayer({ room }: { room: RoomState }) {
         )}
       </AnimatePresence>
 
-      <div className="grid w-full max-w-sm grid-cols-2 gap-4">
-        {labels.map((l, i) => (
-          <motion.button
-            key={i}
-            disabled={disabled}
-            onClick={() => choose(i)}
-            whileTap={{ scale: 0.9 }}
-            className={`aspect-square rounded-3xl text-5xl text-white shadow-chunky-sm disabled:opacity-40 ${colors[i]}`}
-          >
-            {l}
-          </motion.button>
-        ))}
-      </div>
+      {/* Show blurred placeholder cards while in show phase */}
+      {state?.phase === "show" && (
+        <div className="grid w-full max-w-sm grid-cols-2 gap-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-3xl bg-purple-100 shadow-chunky-sm animate-pulse"
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Show actual options once input or result phase */}
+      {(state?.phase === "input" || state?.phase === "result") && state?.options && (
+        <div className="grid w-full max-w-sm grid-cols-2 gap-4">
+          {state.options.map((opt, i) => (
+            <motion.button
+              key={i}
+              disabled={disabled}
+              onClick={() => choose(i)}
+              whileTap={{ scale: 0.88 }}
+              animate={
+                state.lastResult && i === state.oddIndex
+                  ? { y: [0, -8, 0] }
+                  : {}
+              }
+              className={`flex aspect-square items-center justify-center rounded-3xl shadow-chunky-sm transition-colors disabled:cursor-not-allowed ${cardStyle(i)} ${
+                isNumbers
+                  ? "text-6xl font-black text-gray-800"
+                  : "text-5xl"
+              }`}
+            >
+              {opt}
+            </motion.button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

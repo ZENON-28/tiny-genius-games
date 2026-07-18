@@ -25,7 +25,7 @@ const SHOW_DURATION_MS = 10_000; // 10 seconds to memorise the sequence
 function generateSequence(length: number): string[] {
   const seq: string[] = [];
   for (let i = 0; i < length; i++) {
-    seq.push(COLORS[Math.floor(Math.random() * Math.max(Math.min(length + 2, 4), 3))].id);
+    seq.push(COLORS[Math.floor(Math.random() * 3)].id);
   }
   return seq;
 }
@@ -237,7 +237,7 @@ export function ColorMemoryPlayer({
   }
 
   // Clamp active colours to 3–4 (matching generateSequence pool)
-  const activeCount = COLORS.slice(0, Math.max(Math.min((cm?.level ?? 3) + 2, 4), 3));
+  const activeCount = COLORS.slice(0, 3);
   const disabled = !cm || cm.phase !== "input";
 
   return (
