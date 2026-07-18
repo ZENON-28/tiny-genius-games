@@ -5,6 +5,7 @@ import {
   updateDoc,
   getDoc,
   serverTimestamp,
+  deleteField,
 } from "firebase/firestore";
 import { db, isFirebaseConfigured, ensureAnonAuth } from "./firebase";
 import type { RoomState, Player, GameId } from "@/types";
@@ -158,17 +159,35 @@ export function subscribeRoom(
   return localBackend.subscribe(code, cb);
 }
 
+// Firestore rejects `undefined` field values outright (the write throws and
+// nothing is saved). Any top-level field set to `undefined` in a patch is
+// converted to Firestore's `deleteField()` sentinel instead, which removes
+// the field cleanly. This is what makes Restart / Switch Game / Lobby work.
+function cleanPatchForFirestore(patch: Record<string, unknown>): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {};
+  Object.entries(patch).forEach(([key, value]) => {
+    cleaned[key] = value === undefined ? deleteField() : value;
+  });
+  return cleaned;
+}
+
 export async function updateRoom(
   code: string,
   patch: Partial<RoomState>
 ): Promise<void> {
   if (isFirebaseConfigured && db) {
-    await updateDoc(doc(db, "rooms", code), patch as Record<string, unknown>);
+    await updateDoc(doc(db, "rooms", code), cleanPatchForFirestore(patch as Record<string, unknown>));
     return;
   }
   const room = localBackend.read(code);
   if (!room) return;
-  localBackend.write({ ...room, ...patch });
+  const merged = { ...room, ...patch };
+  // Mirror Firestore's deleteField behavior locally: drop keys explicitly
+  // set to undefined instead of leaving stale nested objects in place.
+  Object.entries(patch).forEach(([key, value]) => {
+    if (value === undefined) delete (merged as Record<string, unknown>)[key];
+  });
+  localBackend.write(merged);
 }
 
 /** Convenience helper for deeply patching a specific field, e.g. a player's score. */
@@ -178,7 +197,9 @@ export async function patchRoomField(
   value: unknown
 ): Promise<void> {
   if (isFirebaseConfigured && db) {
-    await updateDoc(doc(db, "rooms", code), { [fieldPath]: value });
+    await updateDoc(doc(db, "rooms", code), {
+      [fieldPath]: value === undefined ? deleteField() : value,
+    });
     return;
   }
   const room = localBackend.read(code);
@@ -187,7 +208,12 @@ export async function patchRoomField(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let target: any = room;
   for (let i = 0; i < keys.length - 1; i++) target = target[keys[i]];
-  target[keys[keys.length - 1]] = value;
+  const lastKey = keys[keys.length - 1];
+  if (value === undefined) {
+    delete target[lastKey];
+  } else {
+    target[lastKey] = value;
+  }
   localBackend.write(room);
 }
 
