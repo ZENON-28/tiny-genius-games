@@ -58,8 +58,9 @@ export function OddOneOutHost({ room }: { room: RoomState }) {
         oddIndex: q.oddIndex,
         category: q.category,
         phase: "show",
-        selectedIndex: undefined,
-        lastResult: undefined,
+        // selectedIndex and lastResult intentionally omitted:
+        // Firestore rejects `undefined` in nested objects, and omitting
+        // them is safe because updateDoc replaces the whole oddOneOut map.
       },
     });
     // Auto-advance to input after 10 s — host can also skip early.
