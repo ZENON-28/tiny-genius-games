@@ -32,6 +32,7 @@ export interface OddOneOutState {
   options: string[];       // 4 emoji options
   oddIndex: number;        // index of the correct (odd) answer
   category: string;
+  phase: "show" | "input" | "result"; // show = host displaying, input = player can answer
   selectedIndex?: number;
   lastResult?: "correct" | "wrong";
 }

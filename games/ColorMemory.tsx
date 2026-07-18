@@ -20,10 +20,11 @@ const COLORS = [
   { id: "teal", hex: "#2DD4BF", label: "Teal" },
 ];
 
+const SHOW_DURATION_MS = 10_000; // 10 seconds to memorise the sequence
+
 function generateSequence(length: number): string[] {
   const seq: string[] = [];
   for (let i = 0; i < length; i++) {
-    // ✅ CHANGED: clamp pool size to [3, 4]
     seq.push(COLORS[Math.floor(Math.random() * Math.max(Math.min(length + 2, 4), 3))].id);
   }
   return seq;
@@ -39,9 +40,15 @@ function colorHex(id: string) {
 export function ColorMemoryHost({ room }: { room: RoomState }) {
   const cm = room.colorMemory;
   const started = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playerId = Object.keys(room.players)[0];
   const player = playerId ? room.players[playerId] : undefined;
 
+  // Live countdown (seconds remaining in show phase)
+  const [countdown, setCountdown] = useState(SHOW_DURATION_MS / 1000);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Kick off the very first round.
   useEffect(() => {
     if (!cm && !started.current) {
       started.current = true;
@@ -50,16 +57,41 @@ export function ColorMemoryHost({ room }: { room: RoomState }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cm]);
 
+  // Start/stop countdown ticker whenever phase changes.
+  useEffect(() => {
+    if (cm?.phase === "show") {
+      setCountdown(SHOW_DURATION_MS / 1000);
+      countdownRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          const next = prev - 1;
+          return next <= 0 ? 0 : next;
+        });
+      }, 1000);
+    } else {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    }
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [cm?.phase]);
+
   async function startRound(level: number) {
     const sequence = generateSequence(level);
     await updateRoom(room.code, {
       colorMemory: { sequence, playerInput: [], phase: "show", level },
     });
-    window.setTimeout(() => {
-      void patchRoomField(room.code, "colorMemory.phase", "input");
-    }, 1500 + level * 900);
+    // Auto-advance after 10 s — host can also skip early.
+    timerRef.current = window.setTimeout(() => {
+      void advanceToInput();
+    }, SHOW_DURATION_MS);
   }
 
+  async function advanceToInput() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    await patchRoomField(room.code, "colorMemory.phase", "input");
+  }
+
+  // Watch the player's submitted input and grade it once it matches sequence length.
   useEffect(() => {
     if (!cm || cm.phase !== "input") return;
     if (cm.playerInput.length === 0) return;
@@ -119,6 +151,22 @@ export function ColorMemoryHost({ room }: { room: RoomState }) {
                   style={{ backgroundColor: colorHex(c) }}
                 />
               ))}
+            </div>
+
+            {/* Countdown + skip button */}
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-4xl font-bold text-purple-500 tabular-nums">
+                  {countdown}s
+                </span>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => void advanceToInput()}
+                className="rounded-2xl bg-purple-600 px-8 py-3 font-display text-lg font-bold text-white shadow-chunky-sm hover:bg-purple-700 active:translate-y-0.5"
+              >
+                ▶ Player is Ready!
+              </motion.button>
             </div>
           </>
         )}
@@ -188,7 +236,7 @@ export function ColorMemoryPlayer({
     await patchRoomField(room.code, "colorMemory.playerInput", [...cm.playerInput, id]);
   }
 
-  // ✅ CHANGED: clamp active color buttons to [3, 4]
+  // Clamp active colours to 3–4 (matching generateSequence pool)
   const activeCount = COLORS.slice(0, Math.max(Math.min((cm?.level ?? 3) + 2, 4), 3));
   const disabled = !cm || cm.phase !== "input";
 

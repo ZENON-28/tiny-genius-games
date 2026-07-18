@@ -4,7 +4,14 @@ import type { OddOneOutQuestion } from "@/types";
 // three "same" items with one "odd" item from the same category to build
 // a large bank of randomized multiple-choice questions.
 const CATEGORY_POOLS: Record<string, string[]> = {
-  Animals: ["🐶", "🐱", "🐰", "🐻", "🐼", "🦁", "🐸", "🐵", "🐷", "🐮"],
+  // ── Numbers (digit strings so host renders them as big text) ──────────────
+  Numbers: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+
+  // ── Emoji categories ──────────────────────────────────────────────────────
+  Animals: [
+    "🐶", "🐱", "🐰", "🐻", "🐼", "🦁", "🐸", "🐵", "🐷", "🐮",
+    "🐯", "🦊", "🐺", "🦝", "🐨", "🦘", "🦔", "🐭", "🐹", "🐗",
+  ],
   Fruits: ["🍎", "🍌", "🍇", "🍊", "🍓", "🍑", "🍍", "🥝", "🍒", "🍉"],
   Vehicles: ["🚗", "🚕", "🚌", "🚓", "🚑", "🚒", "🚜", "🚲", "✈️", "🚁"],
   Food: ["🍕", "🍔", "🌭", "🍟", "🍩", "🍪", "🧁", "🍦", "🥞", "🍰"],
@@ -16,6 +23,14 @@ const CATEGORY_POOLS: Record<string, string[]> = {
   Emojis: ["😀", "😂", "😍", "😎", "🥳", "😴", "🤔", "😭", "🥰", "😜"],
   Toys: ["🧸", "🪀", "🎲", "🪁", "🧩", "🎯", "🚀", "🎈", "🪆", "🧶"],
   Planets: ["🪐", "🌍", "🌕", "☀️", "⭐", "🌟", "🌙", "💫", "🌎", "🌏"],
+
+  // ── New categories ────────────────────────────────────────────────────────
+  Ocean: ["🐠", "🐳", "🦈", "🐙", "🦑", "🐡", "🦞", "🦀", "🐚", "🪸"],
+  Birds: ["🐦", "🦅", "🦆", "🦉", "🦚", "🦜", "🐧", "🦢", "🦩", "🪶"],
+  Weather: ["☀️", "🌧️", "⛅", "❄️", "🌩️", "🌈", "🌪️", "🌫️", "🌊", "☁️"],
+  Music: ["🎵", "🎸", "🥁", "🎹", "🎺", "🎻", "🪗", "🎷", "🪘", "🎙️"],
+  Space: ["🚀", "🛸", "🌌", "☄️", "🛰️", "👨‍🚀", "🌠", "🔭", "💥", "🪐"],
+  Bugs: ["🐛", "🦋", "🐝", "🐞", "🦗", "🪲", "🦟", "🪳", "🐜", "🦠"],
 };
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
