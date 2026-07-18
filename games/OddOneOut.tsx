@@ -17,7 +17,6 @@ const SHOW_DURATION_MS = 10_000; // 10 seconds for the host to present the quest
 // ---------------------------------------------------------------------------
 export function OddOneOutHost({ room }: { room: RoomState }) {
   const state = room.oddOneOut;
-  const started = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playerId = Object.keys(room.players)[0];
   const player = playerId ? room.players[playerId] : undefined;
@@ -26,11 +25,9 @@ export function OddOneOutHost({ room }: { room: RoomState }) {
   const [countdown, setCountdown] = useState(SHOW_DURATION_MS / 1000);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Re-fires whenever state is cleared (restart, game switch, etc.)
   useEffect(() => {
-    if (!state && !started.current) {
-      started.current = true;
-      void loadQuestion(0);
-    }
+    if (!state) void loadQuestion(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 

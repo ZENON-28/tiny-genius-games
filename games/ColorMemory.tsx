@@ -39,7 +39,6 @@ function colorHex(id: string) {
 // ---------------------------------------------------------------------------
 export function ColorMemoryHost({ room }: { room: RoomState }) {
   const cm = room.colorMemory;
-  const started = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playerId = Object.keys(room.players)[0];
   const player = playerId ? room.players[playerId] : undefined;
@@ -48,12 +47,9 @@ export function ColorMemoryHost({ room }: { room: RoomState }) {
   const [countdown, setCountdown] = useState(SHOW_DURATION_MS / 1000);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Kick off the very first round.
+  // Re-fires whenever cm is cleared (restart, game switch, etc.)
   useEffect(() => {
-    if (!cm && !started.current) {
-      started.current = true;
-      void startRound(3);
-    }
+    if (!cm) void startRound(3);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cm]);
 
@@ -117,8 +113,7 @@ export function ColorMemoryHost({ room }: { room: RoomState }) {
     await patchRoomField(room.code, "questionNumber", room.questionNumber + 1);
 
     window.setTimeout(() => {
-      const nextLevel = correct ? Math.min((cm?.level ?? 3) + 1, 8) : cm?.level ?? 3;
-      void startRound(nextLevel);
+      void startRound(3); // always level 3
     }, 2200);
   }
 
