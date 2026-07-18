@@ -23,7 +23,8 @@ const COLORS = [
 function generateSequence(length: number): string[] {
   const seq: string[] = [];
   for (let i = 0; i < length; i++) {
-    seq.push(COLORS[Math.floor(Math.random() * Math.min(length + 2, COLORS.length))].id);
+    // ✅ CHANGED: clamp pool size to [3, 4]
+    seq.push(COLORS[Math.floor(Math.random() * Math.max(Math.min(length + 2, 4), 3))].id);
   }
   return seq;
 }
@@ -41,7 +42,6 @@ export function ColorMemoryHost({ room }: { room: RoomState }) {
   const playerId = Object.keys(room.players)[0];
   const player = playerId ? room.players[playerId] : undefined;
 
-  // Kick off the very first round.
   useEffect(() => {
     if (!cm && !started.current) {
       started.current = true;
@@ -60,7 +60,6 @@ export function ColorMemoryHost({ room }: { room: RoomState }) {
     }, 1500 + level * 900);
   }
 
-  // Watch the player's submitted input and grade it once it matches sequence length.
   useEffect(() => {
     if (!cm || cm.phase !== "input") return;
     if (cm.playerInput.length === 0) return;
@@ -189,7 +188,8 @@ export function ColorMemoryPlayer({
     await patchRoomField(room.code, "colorMemory.playerInput", [...cm.playerInput, id]);
   }
 
-  const activeCount = COLORS.slice(0, Math.min((cm?.level ?? 3) + 2, COLORS.length));
+  // ✅ CHANGED: clamp active color buttons to [3, 4]
+  const activeCount = COLORS.slice(0, Math.max(Math.min((cm?.level ?? 3) + 2, 4), 3));
   const disabled = !cm || cm.phase !== "input";
 
   return (
